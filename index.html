@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3GrowthChart3 | پایش رشد اطفال</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { 
+            --primary: #4361ee; 
+            --secondary: #7209b7;
+            --bg: #f4f7fe; 
+            --card: #ffffff;
+            --text: #2b2d42; 
+        }
+        body { font-family: Tahoma, 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); }
+        
+        /* Navigation */
+        nav { background: var(--primary); padding: 15px; display: flex; justify-content: center; gap: 20px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        nav a { color: white; text-decoration: none; font-weight: bold; font-size: 0.9rem; padding: 5px 15px; border-radius: 20px; transition: 0.3s; }
+        nav a:hover, nav a.active { background: rgba(255,255,255,0.2); }
+
+        .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+        .page { display: none; animation: fadeIn 0.4s ease; }
+        .page.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { background: var(--card); border-radius: 25px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); border: 1px solid #edf2f7; margin-bottom: 20px; }
+        h1 { text-align: center; color: var(--primary); font-size: 1.6rem; margin-bottom: 10px; letter-spacing: 1px; }
+        h2 { color: var(--secondary); font-size: 1.2rem; border-right: 4px solid var(--secondary); padding-right: 10px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .full { grid-column: span 2; }
+        
+        label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 0.85rem; color: #555; }
+        input, select { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 1rem; box-sizing: border-box; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1); }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 25px; }
+        button { border: none; padding: 15px; border-radius: 15px; color: white; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.3s; }
+        .btn-blue { background: var(--primary); }
+        .btn-purple { background: var(--secondary); }
+        button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        .result-box { margin-top: 20px; padding: 20px; border-radius: 20px; display: none; text-align: center; border: 2px solid #e2e8f0; background: #fff; }
+        .status-text { font-size: 1.5rem; font-weight: bold; color: var(--primary); display: block; margin: 10px 0; }
+        
+        .chart-wrapper { position: relative; height: 350px; width: 100%; margin-top: 25px; }
+
+        /* About Page Styles */
+        .about-text { line-height: 1.8; font-size: 0.95rem; text-align: justify; }
+        .contact-info { background: #f8f9fa; padding: 15px; border-radius: 15px; margin-top: 20px; border-right: 4px solid var(--primary); }
+        .contact-info p { margin: 5px 0; font-weight: bold; }
+        .contact-info a { color: var(--primary); text-decoration: none; }
+
+        .preterm-box { background: #fffcf0; border: 1px dashed #f39c12; padding: 15px; border-radius: 15px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="#" onclick="showPage('calculator')" id="tab-calculator" class="active">محاسبه‌گر</a>
+    <a href="#" onclick="showPage('about')" id="tab-about">درباره برنامه</a>
+</nav>
+
+<div class="container">
+    
+    <!-- Page 1: Calculator -->
+    <div id="calculator" class="page active">
+        <div class="card">
+            <h1>3GrowthChart3</h1>
+            <p style="text-align:center; font-size:0.8rem; color:#888; margin-bottom:20px;">سیستم هوشمند پایش رشد اطفال</p>
+            
+            <div class="form-grid">
+                <div>
+                    <label>جنسیت:</label>
+                    <select id="gender">
+                        <option value="male">پسر 👦</option>
+                        <option value="female">دختر 👧</option>
+                    </select>
+                </div>
+                <div>
+                    <label>واحد سن:</label>
+                    <select id="ageUnit">
+                        <option value="days">روز</option>
+                        <option value="months" selected>ماه</option>
+                        <option value="years">سال</option>
+                    </select>
+                </div>
+                <div class="full">
+                    <label>مقدار سن:</label>
+                    <input type="number" id="ageValue" placeholder="مثلاً 14" step="any">
+                </div>
+                <div class="full">
+                    <label>وضعیت تولد:</label>
+                    <select id="isPreterm" onchange="togglePreterm()">
+                        <option value="no">تولد به موقع (ترم)</option>
+                        <option value="yes">نوزاد نارس (Preterm)</option>
+                    </select>
+                </div>
+                <div id="pretermInputs" class="full preterm-box" style="display: none;">
+                    <label>هفته تولد (24 تا 37):</label>
+                    <input type="number" id="gestWeeks" value="32" min="24" max="37">
+                </div>
+                <div>
+                    <label>وزن (کیلوگرم):</label>
+                    <input type="number" id="weight" step="0.01" placeholder="مثلاً 9.5">
+                </div>
+                <div>
+                    <label>قد (سانتی‌متر):</label>
+                    <input type="number" id="height" step="0.1" placeholder="مثلاً 75">
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-blue" onclick="process('weight')">آنالیز وزن</button>
+                <button class="btn-blue" onclick="process('height')">آنالیز قد</button>
+                <button class="btn-purple" onclick="process('bmi')">آنالیز BMI</button>
+                <button style="background:#95a5a6" onclick="location.reload()">نوسازی</button>
+            </div>
+        </div>
+
+        <div id="resultArea" class="result-box">
+            <div id="resTitle" style="color: #666; font-size: 0.9rem;"></div>
+            <span class="status-text" id="resStatus"></span>
+            <div id="resDetail" style="margin-bottom: 10px;"></div>
+            <div class="chart-wrapper">
+                <canvas id="growthChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2: About -->
+    <div id="about" class="page">
+        <div class="card">
+            <h2>درباره اپلیکیشن 3GrowthChart3</h2>
+            <div class="about-text">
+                <p>این اپلیکیشن ابزاری دقیق برای پایش رشد فیزیکی کودکان از بدو تولد تا ۵ سالگی است. تمامی محاسبات و نمودارهای این برنامه بر اساس استانداردهای سال ۲۰۰۶ <strong>سازمان جهانی بهداشت (WHO)</strong> است که در ایران نیز به عنوان مرجع اصلی در کارت‌های سلامت وزارت بهداشت استفاده می‌شود.</p>
+                
+                <strong>قابلیت‌های کلیدی:</strong>
+                <ul>
+                    <li>محاسبه دقیق سن بر اساس روز، ماه یا سال.</li>
+                    <li>قابلیت <strong>اصلاح سن (Corrected Age)</strong> برای نوزادان نارس تا سن ۲ سالگی.</li>
+                    <li>محاسبه شاخص توده بدنی (BMI) متناسب با سن و جنسیت.</li>
+                    <li>نمایش وضعیت کودک روی نمودار نرم و حرفه‌ای (صدک‌های ۳، ۵۰ و ۹۷).</li>
+                </ul>
+                
+                <p>هدف از این برنامه، کمک به والدین و متخصصان برای درک بهتر روند رشد کودک و شناسایی زودهنگام اختلالات تغذیه‌ای یا رشد است.</p>
+            </div>
+
+            <div class="contact-info">
+                <p>توسعه‌دهنده: علیرضا زارع (Alireza Zare)</p>
+                <p>ایمیل: <a href="mailto:3alirezare3@gmail.com">3alirezare3@gmail.com</a></p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let chartInstance = null;
+
+function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    document.getElementById('tab-' + pageId).classList.add('active');
+}
+
+function togglePreterm() {
+    const isPreterm = document.getElementById('isPreterm').value;
+    document.getElementById('pretermInputs').style.display = isPreterm === 'yes' ? 'block' : 'none';
+}
+
+const WHO_DATA = {
+    male: {
+        weight: { t:[0, 3, 6, 9, 12, 18, 24, 36, 48, 60], p3:[2.5, 5.0, 6.4, 7.1, 7.7, 8.8, 9.7, 11.3, 12.7, 14.1], p50:[3.3, 6.4, 7.9, 8.9, 9.6, 10.9, 12.2, 14.3, 16.3, 18.3], p97:[4.4, 8.0, 9.8, 11.0, 12.0, 13.7, 15.3, 18.3, 21.2, 24.2] },
+        height: { t:[0, 3, 6, 9, 12, 18, 24, 36, 48, 60], p3:[46.1, 57.3, 63.3, 67.5, 71.0, 76.9, 81.7, 88.7, 94.9, 100.7], p50:[49.9, 61.4, 67.6, 72.0, 75.7, 82.3, 87.8, 96.1, 103.3, 110.0], p97:[53.7, 65.5, 71.9, 76.5, 80.5, 87.7, 93.9, 103.5, 111.7, 119.2] },
+        bmi: { t:[0, 3, 6, 9, 12, 18, 24, 36, 48, 60], p3:[11.1, 13.8, 14.5, 14.6, 14.5, 14.2, 13.9, 13.5, 13.0, 12.6], p50:[13.4, 16.8, 17.5, 17.6, 17.3, 16.7, 16.2, 15.6, 15.2, 15.0], p97:[16.3, 20.1, 21.0, 21.0, 20.4, 19.6, 19.1, 18.6, 18.5, 18.7] }
+    },
+    female: {
+        weight: { t:[0, 3, 6, 9, 12, 18, 24, 36, 48, 60], p3:[2.4, 4.5, 5.8, 6.6, 7.0, 8.1, 9.0, 10.8, 12.3, 13.7], p50:[3.2, 5.8, 7.3, 8.2, 8.9, 10.2, 11.5, 13.9, 16.1, 18.2], p97:[4.2, 7.5, 9.2, 10.4, 11.5, 13.2, 14.8, 18.1, 21.5, 24.9] },
+        height: { t:[0, 3, 6, 9, 12, 18, 24, 36, 48, 60], p3:[45.4, 55.6, 61.2, 65.3, 68.9, 74.9, 80.0, 87.4, 94.1, 99.9], p50:[49.1, 59.8, 65.7, 70.1, 74.0, 80.7, 86.4, 95.1, 102.7, 109.4], p97:[52.9, 64.0, 70.3, 75.0, 79.2, 86.5, 92.9, 102.7, 111.3, 118.9] },
+        bmi: { t:[0, 3, 6, 9, 12, 18, 24, 36, 48, 60], p3:[10.8, 13.2, 13.9, 14.0, 13.9, 13.6, 13.3, 12.9, 12.5, 12.1], p50:[13.3, 16.2, 16.8, 16.8, 16.6, 16.1, 15.7, 15.3, 15.1, 15.0], p97:[16.1, 19.4, 20.1, 20.3, 20.0, 19.4, 19.1, 19.0, 19.3, 19.8] }
+    }
+};
+
+function process(type) {
+    const ageVal = parseFloat(document.getElementById('ageValue').value);
+    const unit = document.getElementById('ageUnit').value;
+    const gender = document.getElementById('gender').value;
+    let weight = parseFloat(document.getElementById('weight').value);
+    let height = parseFloat(document.getElementById('height').value);
+
+    if (isNaN(ageVal)) { alert("لطفاً سن را وارد کنید"); return; }
+
+    let ageMonths = ageVal;
+    if (unit === 'days') ageMonths = ageVal / 30.44;
+    if (unit === 'years') ageMonths = ageVal * 12;
+
+    if (document.getElementById('isPreterm').value === 'yes' && ageMonths <= 24) {
+        let gestWeeks = parseInt(document.getElementById('gestWeeks').value);
+        ageMonths -= (40 - gestWeeks) * 7 / 30.44;
+    }
+    if (ageMonths < 0) ageMonths = 0;
+
+    let val, label;
+    if (type === 'bmi') {
+        if (!weight || !height) { alert("وزن و قد هر دو الزامی هستند"); return; }
+        val = weight / Math.pow(height/100, 2); label = "BMI";
+    } else {
+        val = (type === 'weight') ? weight : height;
+        if (isNaN(val)) { alert("مقدار را وارد کنید"); return; }
+        label = (type === 'weight') ? "وزن" : "قد";
+    }
+
+    render(gender, ageMonths, val, type, label);
+}
+
+function render(gender, age, val, type, label) {
+    const data = WHO_DATA[gender][type];
+    const p3 = interpolate(age, data.t, data.p3);
+    const p50 = interpolate(age, data.t, data.p50);
+    const p97 = interpolate(age, data.t, data.p97);
+
+    let status = (val < p3) ? "بسیار پایین" : (val > p97) ? "بسیار بالا" : "محدوده نرمال";
+    
+    document.getElementById('resultArea').style.display = 'block';
+    document.getElementById('resStatus').innerText = status;
+    document.getElementById('resDetail').innerText = `میانگین استاندارد: ${p50.toFixed(1)} (${label})`;
+
+    const ctx = document.getElementById('growthChart').getContext('2d');
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.t,
+            datasets: [
+                { label: 'صدک 97', data: data.p97, borderColor: '#f72585', borderDash: [5,5], fill: false, tension: 0.4 },
+                { label: 'میانگین', data: data.p50, borderColor: '#27ae60', borderWidth: 3, fill: false, tension: 0.4 },
+                { label: 'صدک 3', data: data.p3, borderColor: '#f72585', borderDash: [5,5], fill: false, tension: 0.4 },
+                { label: 'کودک شما', data: [{x: age, y: val}], backgroundColor: '#4361ee', pointRadius: 10, type: 'scatter' }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'linear', min: 0, max: 60 } } }
+    });
+}
+
+function interpolate(x, xArr, yArr) {
+    if (x <= xArr[0]) return yArr[0];
+    if (x >= xArr[xArr.length-1]) return yArr[yArr.length-1];
+    for (let i = 0; i < xArr.length - 1; i++) {
+        if (x >= xArr[i] && x <= xArr[i+1]) {
+            return yArr[i] + (yArr[i+1] - yArr[i]) * (x - xArr[i]) / (xArr[i+1] - xArr[i]);
+        }
+    }
+}
+</script>
+
+</body>
+</html>
